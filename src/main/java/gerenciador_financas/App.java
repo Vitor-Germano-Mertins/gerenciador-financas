@@ -112,13 +112,14 @@ public class App {
     static void menuLogado(Usuario usuario) {
         int opcao = -1;
 
-        while (opcao != 5) {
+        while (opcao != 6) {
             System.out.println("\n===== Olá, " + usuario.getNome() + " =====");
             System.out.println("1 - Nova transação");
             System.out.println("2 - Ver transações");
             System.out.println("3 - Ver saldo");
             System.out.println("4 - Deletar transação");
-            System.out.println("5 - Logout");
+            System.out.println("5 - Editar transação");
+            System.out.println("6 - Logout");
             System.out.print("Escolha uma opção: ");
 
             opcao = lerOpcao();
@@ -137,6 +138,9 @@ public class App {
                     deletarTransacao(usuario);
                     break;
                 case 5:
+                    editarTransacao(usuario);
+                    break;
+                case 6:
                     System.out.println("Logout realizado.");
                     break;
                 default:
@@ -248,6 +252,63 @@ public class App {
             System.out.println("ID inválido.");
         } catch (SQLException e) {
             System.out.println("Erro ao deletar transação: " + e.getMessage());
+        }
+    }
+
+    static void editarTransacao(Usuario usuario) {
+        listarTransacoes(usuario);
+
+        System.out.print("\nDigite o ID da transação que deseja editar: ");
+        int id;
+        try {
+            id = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println("ID inválido.");
+            return;
+        }
+
+        Transacao transacao;
+        try {
+            transacao = transacaoDAO.buscarPorId(id, usuario.getId());
+        } catch (SQLException e) {
+            System.out.println("Erro ao buscar transação: " + e.getMessage());
+            return;
+        }
+
+        if (transacao == null) {
+            System.out.println("Transação não encontrada (ou não pertence a você).");
+            return;
+        }
+
+        System.out.println("Deixe em branco pra manter o valor atual.");
+
+        System.out.print("Descrição atual (" + transacao.getDescricao() + "): ");
+        String descricao = scanner.nextLine();
+        if (!descricao.isBlank()) {
+            transacao.setDescricao(descricao);
+        }
+
+        System.out.print("Valor atual (" + transacao.getValor() + "): ");
+        String valorTexto = scanner.nextLine();
+        if (!valorTexto.isBlank()) {
+            try {
+                transacao.setValor(new BigDecimal(valorTexto.replace(",", ".")));
+            } catch (NumberFormatException e) {
+                System.out.println("Valor inválido, mantendo o valor anterior.");
+            }
+        }
+
+        System.out.print("Categoria atual (" + transacao.getCategoria() + "): ");
+        String categoria = scanner.nextLine();
+        if (!categoria.isBlank()) {
+            transacao.setCategoria(categoria);
+        }
+
+        try {
+            transacaoDAO.atualizar(transacao);
+            System.out.println("Transação atualizada com sucesso!");
+        } catch (SQLException e) {
+            System.out.println("Erro ao atualizar transação: " + e.getMessage());
         }
     }
 }

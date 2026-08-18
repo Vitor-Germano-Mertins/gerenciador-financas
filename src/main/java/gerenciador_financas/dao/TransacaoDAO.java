@@ -31,6 +31,51 @@ public class TransacaoDAO {
         }
     }
 
+    public void atualizar(Transacao transacao) throws SQLException {
+        String sql = "UPDATE transacoes SET descricao = ?, valor = ?, tipo = ?, categoria = ?, data_transacao = ? " +
+                "WHERE id = ? AND usuario_id = ?";
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            stmt.setString(1, transacao.getDescricao());
+            stmt.setBigDecimal(2, transacao.getValor());
+            stmt.setString(3, transacao.getTipo());
+            stmt.setString(4, transacao.getCategoria());
+            stmt.setDate(5, Date.valueOf(transacao.getDataTransacao()));
+            stmt.setInt(6, transacao.getId());
+            stmt.setInt(7, transacao.getUsuarioId());
+
+            stmt.executeUpdate();
+        }
+    }
+
+    public Transacao buscarPorId(int id, int usuarioId) throws SQLException {
+        String sql = "SELECT * FROM transacoes WHERE id = ? AND usuario_id = ?";
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            stmt.setInt(2, usuarioId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Transacao t = new Transacao();
+                t.setId(rs.getInt("id"));
+                t.setUsuarioId(rs.getInt("usuario_id"));
+                t.setDescricao(rs.getString("descricao"));
+                t.setValor(rs.getBigDecimal("valor"));
+                t.setTipo(rs.getString("tipo"));
+                t.setCategoria(rs.getString("categoria"));
+                t.setDataTransacao(rs.getDate("data_transacao").toLocalDate());
+                return t;
+            }
+        }
+
+        return null;
+    }
+
     public List<Transacao> listarPorUsuario(int usuarioId) throws SQLException {
         String sql = "SELECT * FROM transacoes WHERE usuario_id = ? ORDER BY data_transacao DESC";
         List<Transacao> transacoes = new ArrayList<>();
