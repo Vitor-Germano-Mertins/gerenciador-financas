@@ -10,6 +10,7 @@ import java.util.Scanner;
 
 import gerenciador_financas.dao.TransacaoDAO;
 import gerenciador_financas.dao.UsuarioDAO;
+import gerenciador_financas.exception.EmailJaCadastradoException;
 import gerenciador_financas.model.Transacao;
 import gerenciador_financas.model.Usuario;
 
@@ -78,8 +79,10 @@ public class App {
         try {
             usuarioDAO.cadastrar(novoUsuario, senha);
             System.out.println("Usuário cadastrado com sucesso!");
+        } catch (EmailJaCadastradoException e) {
+            System.out.println(e.getMessage());
         } catch (SQLException e) {
-            System.out.println("Erro ao cadastrar: " + e.getMessage());
+            System.out.println("Não foi possível completar o cadastro. Tente novamente mais tarde.");
         }
     }
 

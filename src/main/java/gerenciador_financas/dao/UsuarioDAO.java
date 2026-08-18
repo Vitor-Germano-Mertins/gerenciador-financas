@@ -8,13 +8,17 @@ import java.sql.SQLException;
 import org.mindrot.jbcrypt.BCrypt;
 
 import gerenciador_financas.database.ConexaoBD;
+import gerenciador_financas.exception.EmailJaCadastradoException;
 import gerenciador_financas.model.Usuario;
 
 public class UsuarioDAO {
 
-    public void cadastrar(Usuario usuario, String senhaPlana) throws SQLException {
-        String sql = "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)";
+    public void cadastrar(Usuario usuario, String senhaPlana) throws SQLException, EmailJaCadastradoException {
+        if (emailExiste(usuario.getEmail())) {
+            throw new EmailJaCadastradoException(usuario.getEmail());
+        }
 
+        String sql = "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)";
         String hash = BCrypt.hashpw(senhaPlana, BCrypt.gensalt());
 
         try (Connection conexao = ConexaoBD.conectar();
@@ -25,6 +29,18 @@ public class UsuarioDAO {
             stmt.setString(3, hash);
 
             stmt.executeUpdate();
+        }
+    }
+
+    private boolean emailExiste(String email) throws SQLException {
+        String sql = "SELECT 1 FROM usuarios WHERE email = ?";
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
         }
     }
 
