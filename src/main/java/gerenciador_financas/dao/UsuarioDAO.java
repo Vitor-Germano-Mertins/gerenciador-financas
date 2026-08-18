@@ -1,20 +1,21 @@
 package gerenciador_financas.dao;
 
-import gerenciador_financas.database.ConexaoBD;
-import gerenciador_financas.model.Usuario;
-import org.mindrot.jbcrypt.BCrypt;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.mindrot.jbcrypt.BCrypt;
+
+import gerenciador_financas.database.ConexaoBD;
+import gerenciador_financas.model.Usuario;
+
 public class UsuarioDAO {
 
-    public void cadastrar(Usuario usuario) throws SQLException {
+    public void cadastrar(Usuario usuario, String senhaPlana) throws SQLException {
         String sql = "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)";
 
-        String hash = BCrypt.hashpw(usuario.getSenhaHash(), BCrypt.gensalt());
+        String hash = BCrypt.hashpw(senhaPlana, BCrypt.gensalt());
 
         try (Connection conexao = ConexaoBD.conectar();
                 PreparedStatement stmt = conexao.prepareStatement(sql)) {

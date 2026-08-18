@@ -74,10 +74,9 @@ public class App {
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNome(nome);
         novoUsuario.setEmail(email);
-        novoUsuario.setSenhaHash(senha);
 
         try {
-            usuarioDAO.cadastrar(novoUsuario);
+            usuarioDAO.cadastrar(novoUsuario, senha);
             System.out.println("Usuário cadastrado com sucesso!");
         } catch (SQLException e) {
             System.out.println("Erro ao cadastrar: " + e.getMessage());
