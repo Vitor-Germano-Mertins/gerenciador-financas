@@ -60,17 +60,41 @@ public class App {
         }
     }
 
+    static boolean emailValido(String email) {
+        if (email.isEmpty())
+            return false;
+        return email.matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
+    }
+
     static void cadastrarUsuario() {
         System.out.println("\n--- Cadastro de novo usuário ---");
 
-        System.out.print("Nome: ");
-        String nome = scanner.nextLine();
+        String nome;
+        while (true) {
+            System.out.print("Nome: ");
+            nome = scanner.nextLine().trim();
+            if (!nome.isEmpty())
+                break;
+            System.out.println("O nome não pode ficar em branco.");
+        }
 
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
+        String email;
+        while (true) {
+            System.out.print("Email: ");
+            email = scanner.nextLine().trim();
+            if (emailValido(email))
+                break;
+            System.out.println("Digite um e-mail válido (ex: nome@dominio.com).");
+        }
 
-        System.out.print("Senha: ");
-        String senha = scanner.nextLine();
+        String senha;
+        while (true) {
+            System.out.print("Senha (mínimo 6 caracteres): ");
+            senha = scanner.nextLine();
+            if (senha.length() >= 6)
+                break;
+            System.out.println("A senha precisa ter pelo menos 6 caracteres.");
+        }
 
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNome(nome);
@@ -152,14 +176,24 @@ public class App {
     static void novaTransacao(Usuario usuario) {
         System.out.println("\n--- Nova Transação ---");
 
-        System.out.print("Descrição: ");
-        String descricao = scanner.nextLine();
+        String descricao;
+        while (true) {
+            System.out.print("Descrição: ");
+            descricao = scanner.nextLine().trim();
+            if (!descricao.isEmpty())
+                break;
+            System.out.println("A descrição não pode ficar em branco.");
+        }
 
         BigDecimal valor;
         while (true) {
             System.out.print("Valor (ex: 150.50): ");
             try {
                 valor = new BigDecimal(scanner.nextLine().replace(",", "."));
+                if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+                    System.out.println("O valor precisa ser maior que zero.");
+                    continue;
+                }
                 break;
             } catch (NumberFormatException e) {
                 System.out.println("Valor inválido, tente novamente.");
@@ -170,14 +204,19 @@ public class App {
         while (true) {
             System.out.print("Tipo (receita/despesa): ");
             tipo = scanner.nextLine().trim().toLowerCase();
-            if (tipo.equals("receita") || tipo.equals("despesa")) {
+            if (tipo.equals("receita") || tipo.equals("despesa"))
                 break;
-            }
             System.out.println("Digite 'receita' ou 'despesa'.");
         }
 
-        System.out.print("Categoria (ex: Alimentação, Salário): ");
-        String categoria = scanner.nextLine();
+        String categoria;
+        while (true) {
+            System.out.print("Categoria (ex: Alimentação, Salário): ");
+            categoria = scanner.nextLine().trim();
+            if (!categoria.isEmpty())
+                break;
+            System.out.println("A categoria não pode ficar em branco.");
+        }
 
         LocalDate data;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
