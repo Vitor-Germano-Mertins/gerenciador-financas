@@ -67,8 +67,7 @@ public class App {
     }
 
     static boolean emailValido(String email) {
-        if (email.isEmpty())
-            return false;
+        if (email.isEmpty()) return false;
         return email.matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$");
     }
 
@@ -79,8 +78,7 @@ public class App {
         while (true) {
             System.out.print("Nome: ");
             nome = scanner.nextLine().trim();
-            if (!nome.isEmpty())
-                break;
+            if (!nome.isEmpty()) break;
             System.out.println("O nome não pode ficar em branco.");
         }
 
@@ -88,8 +86,7 @@ public class App {
         while (true) {
             System.out.print("Email: ");
             email = scanner.nextLine().trim();
-            if (emailValido(email))
-                break;
+            if (emailValido(email)) break;
             System.out.println("Digite um e-mail válido (ex: nome@dominio.com).");
         }
 
@@ -97,8 +94,7 @@ public class App {
         while (true) {
             System.out.print("Senha (mínimo 6 caracteres): ");
             senha = scanner.nextLine();
-            if (senha.length() >= 6)
-                break;
+            if (senha.length() >= 6) break;
             System.out.println("A senha precisa ter pelo menos 6 caracteres.");
         }
 
@@ -295,8 +291,7 @@ public class App {
             }
 
             if (id == admin.getId()) {
-                System.out.println(
-                        "Você não pode excluir sua própria conta por aqui. Use a opção 'Excluir minha conta' no menu principal.");
+                System.out.println("Você não pode excluir sua própria conta por aqui. Use a opção 'Excluir minha conta' no menu principal.");
                 return;
             }
 
@@ -357,8 +352,7 @@ public class App {
         while (true) {
             System.out.print("Descrição: ");
             descricao = scanner.nextLine().trim();
-            if (!descricao.isEmpty())
-                break;
+            if (!descricao.isEmpty()) break;
             System.out.println("A descrição não pode ficar em branco.");
         }
 
@@ -381,16 +375,14 @@ public class App {
         while (true) {
             System.out.print("Tipo (receita/despesa): ");
             tipo = scanner.nextLine().trim().toLowerCase();
-            if (tipo.equals("receita") || tipo.equals("despesa"))
-                break;
+            if (tipo.equals("receita") || tipo.equals("despesa")) break;
             System.out.println("Digite 'receita' ou 'despesa'.");
         }
 
         int categoriaId;
         try {
             categoriaId = escolherCategoria(tipo);
-            if (categoriaId == -1)
-                return;
+            if (categoriaId == -1) return;
         } catch (SQLException e) {
             System.out.println("Erro ao buscar categorias: " + e.getMessage());
             return;
