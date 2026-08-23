@@ -1,16 +1,21 @@
 package gerenciador_financas;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 
+import gerenciador_financas.dao.CategoriaDAO;
 import gerenciador_financas.dao.TransacaoDAO;
 import gerenciador_financas.dao.UsuarioDAO;
+import gerenciador_financas.database.ConexaoBD;
 import gerenciador_financas.exception.EmailJaCadastradoException;
+import gerenciador_financas.model.Categoria;
 import gerenciador_financas.model.Transacao;
 import gerenciador_financas.model.Usuario;
 
@@ -19,6 +24,7 @@ public class App {
     static Scanner scanner = new Scanner(System.in);
     static UsuarioDAO usuarioDAO = new UsuarioDAO();
     static TransacaoDAO transacaoDAO = new TransacaoDAO();
+    static CategoriaDAO categoriaDAO = new CategoriaDAO();
 
     public static void main(String[] args) {
         menuPrincipal();
@@ -96,9 +102,26 @@ public class App {
             System.out.println("A senha precisa ter pelo menos 6 caracteres.");
         }
 
+        String tipo = "comum";
+        System.out.print("Deseja cadastrar como administrador? (s/n): ");
+        String querAdmin = scanner.nextLine().trim().toLowerCase();
+
+        if (querAdmin.equals("s")) {
+            System.out.print("Digite a chave de administrador: ");
+            String chaveDigitada = scanner.nextLine();
+
+            if (validarChaveAdmin(chaveDigitada)) {
+                tipo = "admin";
+                System.out.println("Chave correta! Conta será criada como administrador.");
+            } else {
+                System.out.println("Chave incorreta. A conta será criada como usuário comum.");
+            }
+        }
+
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNome(nome);
         novoUsuario.setEmail(email);
+        novoUsuario.setTipo(tipo);
 
         try {
             usuarioDAO.cadastrar(novoUsuario, senha);
@@ -107,6 +130,17 @@ public class App {
             System.out.println(e.getMessage());
         } catch (SQLException e) {
             System.out.println("Não foi possível completar o cadastro. Tente novamente mais tarde.");
+        }
+    }
+
+    static boolean validarChaveAdmin(String chaveDigitada) {
+        try {
+            Properties config = ConexaoBD.carregarConfig();
+            String chaveCorreta = config.getProperty("admin.chave");
+            return chaveCorreta != null && chaveCorreta.equals(chaveDigitada);
+        } catch (IOException e) {
+            System.out.println("Erro ao validar chave de administrador.");
+            return false;
         }
     }
 
@@ -135,40 +169,183 @@ public class App {
 
     static void menuLogado(Usuario usuario) {
         int opcao = -1;
+        int opcaoSair = usuario.isAdmin() ? 8 : 7;
 
-        while (opcao != 6) {
+        while (opcao != opcaoSair) {
             System.out.println("\n===== Olá, " + usuario.getNome() + " =====");
             System.out.println("1 - Nova transação");
             System.out.println("2 - Ver transações");
             System.out.println("3 - Ver saldo");
             System.out.println("4 - Deletar transação");
             System.out.println("5 - Editar transação");
-            System.out.println("6 - Logout");
+            System.out.println("6 - Excluir minha conta");
+            if (usuario.isAdmin()) {
+                System.out.println("7 - Gerenciar usuários (admin)");
+            }
+            System.out.println(opcaoSair + " - Logout");
             System.out.print("Escolha uma opção: ");
 
             opcao = lerOpcao();
 
-            switch (opcao) {
-                case 1:
-                    novaTransacao(usuario);
-                    break;
-                case 2:
-                    listarTransacoes(usuario);
-                    break;
-                case 3:
-                    verSaldo(usuario);
-                    break;
-                case 4:
-                    deletarTransacao(usuario);
-                    break;
-                case 5:
-                    editarTransacao(usuario);
-                    break;
-                case 6:
-                    System.out.println("Logout realizado.");
-                    break;
-                default:
-                    System.out.println("Opção inválida, tente novamente.");
+            if (opcao == 1) {
+                novaTransacao(usuario);
+            } else if (opcao == 2) {
+                listarTransacoes(usuario);
+            } else if (opcao == 3) {
+                verSaldo(usuario);
+            } else if (opcao == 4) {
+                deletarTransacao(usuario);
+            } else if (opcao == 5) {
+                editarTransacao(usuario);
+            } else if (opcao == 6) {
+                boolean contaExcluida = excluirPropriaConta(usuario);
+                if (contaExcluida) {
+                    return; // encerra o menu logado, volta pro menu principal
+                }
+            } else if (opcao == 7 && usuario.isAdmin()) {
+                gerenciarUsuarios(usuario);
+            } else if (opcao == opcaoSair) {
+                System.out.println("Logout realizado.");
+            } else {
+                System.out.println("Opção inválida, tente novamente.");
+            }
+        }
+    }
+
+    /**
+     * Pede a senha atual do usuário logado e, se confirmar corretamente,
+     * exclui a própria conta (e as transações associadas, via ON DELETE CASCADE).
+     * Retorna true se a conta foi excluída.
+     */
+    static boolean excluirPropriaConta(Usuario usuario) {
+        System.out.println("\n--- Excluir minha conta ---");
+        System.out.println("Essa ação é PERMANENTE e vai apagar sua conta e todas as suas transações.");
+        System.out.print("Digite sua senha atual para confirmar: ");
+        String senha = scanner.nextLine();
+
+        try {
+            boolean senhaCorreta = usuarioDAO.confirmarSenha(usuario.getId(), senha);
+
+            if (!senhaCorreta) {
+                System.out.println("Senha incorreta. Exclusão cancelada.");
+                return false;
+            }
+
+            System.out.print("Tem certeza? Digite CONFIRMAR para excluir definitivamente: ");
+            String confirmacao = scanner.nextLine();
+
+            if (!confirmacao.equals("CONFIRMAR")) {
+                System.out.println("Exclusão cancelada.");
+                return false;
+            }
+
+            usuarioDAO.excluir(usuario.getId());
+            System.out.println("Conta excluída com sucesso. Até mais!");
+            return true;
+
+        } catch (SQLException e) {
+            System.out.println("Erro ao excluir conta: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Painel restrito ao administrador: lista todos os usuários
+     * e permite excluir qualquer um deles pelo ID.
+     */
+    static void gerenciarUsuarios(Usuario admin) {
+        int opcao = -1;
+
+        while (opcao != 2) {
+            System.out.println("\n--- Gerenciar Usuários (admin) ---");
+            System.out.println("1 - Listar e excluir usuário");
+            System.out.println("2 - Voltar");
+            System.out.print("Escolha uma opção: ");
+
+            opcao = lerOpcao();
+
+            if (opcao == 1) {
+                excluirUsuarioComoAdmin(admin);
+            } else if (opcao != 2) {
+                System.out.println("Opção inválida, tente novamente.");
+            }
+        }
+    }
+
+    static void excluirUsuarioComoAdmin(Usuario admin) {
+        try {
+            List<Usuario> usuarios = usuarioDAO.listarTodos();
+
+            if (usuarios.isEmpty()) {
+                System.out.println("Nenhum usuário cadastrado.");
+                return;
+            }
+
+            System.out.println("\nUsuários cadastrados:");
+            for (Usuario u : usuarios) {
+                System.out.printf("[%d] %s | %s | %s%n", u.getId(), u.getNome(), u.getEmail(), u.getTipo());
+            }
+
+            System.out.print("\nDigite o ID do usuário que deseja excluir (ou 0 para cancelar): ");
+            int id = Integer.parseInt(scanner.nextLine());
+
+            if (id == 0) {
+                System.out.println("Operação cancelada.");
+                return;
+            }
+
+            if (id == admin.getId()) {
+                System.out.println(
+                        "Você não pode excluir sua própria conta por aqui. Use a opção 'Excluir minha conta' no menu principal.");
+                return;
+            }
+
+            System.out.print("Tem certeza? Essa ação é permanente. Digite CONFIRMAR: ");
+            String confirmacao = scanner.nextLine();
+
+            if (!confirmacao.equals("CONFIRMAR")) {
+                System.out.println("Operação cancelada.");
+                return;
+            }
+
+            usuarioDAO.excluir(id);
+            System.out.println("Usuário excluído com sucesso.");
+
+        } catch (NumberFormatException e) {
+            System.out.println("ID inválido.");
+        } catch (SQLException e) {
+            System.out.println("Erro ao excluir usuário: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mostra as categorias de um tipo (receita/despesa) numeradas,
+     * e devolve o ID da categoria escolhida pela pessoa.
+     * Retorna -1 se não houver categorias cadastradas daquele tipo.
+     */
+    static int escolherCategoria(String tipo) throws SQLException {
+        List<Categoria> categorias = categoriaDAO.listarPorTipo(tipo);
+
+        if (categorias.isEmpty()) {
+            System.out.println("Nenhuma categoria de " + tipo + " cadastrada.");
+            return -1;
+        }
+
+        System.out.println("Categorias de " + tipo + ":");
+        for (int i = 0; i < categorias.size(); i++) {
+            System.out.println((i + 1) + " - " + categorias.get(i).getNome());
+        }
+
+        while (true) {
+            System.out.print("Escolha o número da categoria: ");
+            try {
+                int escolha = Integer.parseInt(scanner.nextLine());
+                if (escolha >= 1 && escolha <= categorias.size()) {
+                    return categorias.get(escolha - 1).getId();
+                }
+                System.out.println("Opção inválida.");
+            } catch (NumberFormatException e) {
+                System.out.println("Digite um número válido.");
             }
         }
     }
@@ -209,13 +386,14 @@ public class App {
             System.out.println("Digite 'receita' ou 'despesa'.");
         }
 
-        String categoria;
-        while (true) {
-            System.out.print("Categoria (ex: Alimentação, Salário): ");
-            categoria = scanner.nextLine().trim();
-            if (!categoria.isEmpty())
-                break;
-            System.out.println("A categoria não pode ficar em branco.");
+        int categoriaId;
+        try {
+            categoriaId = escolherCategoria(tipo);
+            if (categoriaId == -1)
+                return;
+        } catch (SQLException e) {
+            System.out.println("Erro ao buscar categorias: " + e.getMessage());
+            return;
         }
 
         LocalDate data;
@@ -235,7 +413,7 @@ public class App {
             }
         }
 
-        Transacao transacao = new Transacao(usuario.getId(), descricao, valor, tipo, categoria, data);
+        Transacao transacao = new Transacao(usuario.getId(), descricao, valor, tipo, categoriaId, data);
 
         try {
             transacaoDAO.cadastrar(transacao);
@@ -257,12 +435,18 @@ public class App {
             }
 
             for (Transacao t : transacoes) {
+                String nomeCategoria = "?";
+                Categoria categoria = categoriaDAO.buscarPorId(t.getCategoriaId());
+                if (categoria != null) {
+                    nomeCategoria = categoria.getNome();
+                }
+
                 System.out.printf("[%d] %s | %s | R$ %.2f | %s | %s%n",
                         t.getId(),
                         t.getDataTransacao(),
                         t.getTipo().toUpperCase(),
                         t.getValor(),
-                        t.getCategoria(),
+                        nomeCategoria,
                         t.getDescricao());
             }
         } catch (SQLException e) {
@@ -337,10 +521,17 @@ public class App {
             }
         }
 
-        System.out.print("Categoria atual (" + transacao.getCategoria() + "): ");
-        String categoria = scanner.nextLine();
-        if (!categoria.isBlank()) {
-            transacao.setCategoria(categoria);
+        System.out.print("Trocar categoria? (s/n): ");
+        String trocarCategoria = scanner.nextLine().trim().toLowerCase();
+        if (trocarCategoria.equals("s")) {
+            try {
+                int novaCategoriaId = escolherCategoria(transacao.getTipo());
+                if (novaCategoriaId != -1) {
+                    transacao.setCategoriaId(novaCategoriaId);
+                }
+            } catch (SQLException e) {
+                System.out.println("Erro ao buscar categorias, mantendo a categoria anterior.");
+            }
         }
 
         try {

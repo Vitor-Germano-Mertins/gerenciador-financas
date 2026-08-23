@@ -15,7 +15,7 @@ import gerenciador_financas.model.Transacao;
 public class TransacaoDAO {
 
     public void cadastrar(Transacao transacao) throws SQLException {
-        String sql = "INSERT INTO transacoes (usuario_id, descricao, valor, tipo, categoria, data_transacao) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO transacoes (usuario_id, descricao, valor, tipo, categoria_id, data_transacao) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conexao = ConexaoBD.conectar();
                 PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -24,7 +24,7 @@ public class TransacaoDAO {
             stmt.setString(2, transacao.getDescricao());
             stmt.setBigDecimal(3, transacao.getValor());
             stmt.setString(4, transacao.getTipo());
-            stmt.setString(5, transacao.getCategoria());
+            stmt.setInt(5, transacao.getCategoriaId());
             stmt.setDate(6, Date.valueOf(transacao.getDataTransacao()));
 
             stmt.executeUpdate();
@@ -32,7 +32,7 @@ public class TransacaoDAO {
     }
 
     public void atualizar(Transacao transacao) throws SQLException {
-        String sql = "UPDATE transacoes SET descricao = ?, valor = ?, tipo = ?, categoria = ?, data_transacao = ? " +
+        String sql = "UPDATE transacoes SET descricao = ?, valor = ?, tipo = ?, categoria_id = ?, data_transacao = ? " +
                 "WHERE id = ? AND usuario_id = ?";
 
         try (Connection conexao = ConexaoBD.conectar();
@@ -41,7 +41,7 @@ public class TransacaoDAO {
             stmt.setString(1, transacao.getDescricao());
             stmt.setBigDecimal(2, transacao.getValor());
             stmt.setString(3, transacao.getTipo());
-            stmt.setString(4, transacao.getCategoria());
+            stmt.setInt(4, transacao.getCategoriaId());
             stmt.setDate(5, Date.valueOf(transacao.getDataTransacao()));
             stmt.setInt(6, transacao.getId());
             stmt.setInt(7, transacao.getUsuarioId());
@@ -61,15 +61,7 @@ public class TransacaoDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                Transacao t = new Transacao();
-                t.setId(rs.getInt("id"));
-                t.setUsuarioId(rs.getInt("usuario_id"));
-                t.setDescricao(rs.getString("descricao"));
-                t.setValor(rs.getBigDecimal("valor"));
-                t.setTipo(rs.getString("tipo"));
-                t.setCategoria(rs.getString("categoria"));
-                t.setDataTransacao(rs.getDate("data_transacao").toLocalDate());
-                return t;
+                return mapearTransacao(rs);
             }
         }
 
@@ -87,15 +79,7 @@ public class TransacaoDAO {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                Transacao t = new Transacao();
-                t.setId(rs.getInt("id"));
-                t.setUsuarioId(rs.getInt("usuario_id"));
-                t.setDescricao(rs.getString("descricao"));
-                t.setValor(rs.getBigDecimal("valor"));
-                t.setTipo(rs.getString("tipo"));
-                t.setCategoria(rs.getString("categoria"));
-                t.setDataTransacao(rs.getDate("data_transacao").toLocalDate());
-                transacoes.add(t);
+                transacoes.add(mapearTransacao(rs));
             }
         }
 
@@ -133,5 +117,17 @@ public class TransacaoDAO {
 
             stmt.executeUpdate();
         }
+    }
+
+    private Transacao mapearTransacao(ResultSet rs) throws SQLException {
+        Transacao t = new Transacao();
+        t.setId(rs.getInt("id"));
+        t.setUsuarioId(rs.getInt("usuario_id"));
+        t.setDescricao(rs.getString("descricao"));
+        t.setValor(rs.getBigDecimal("valor"));
+        t.setTipo(rs.getString("tipo"));
+        t.setCategoriaId(rs.getInt("categoria_id"));
+        t.setDataTransacao(rs.getDate("data_transacao").toLocalDate());
+        return t;
     }
 }

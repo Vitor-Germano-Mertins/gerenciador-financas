@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -18,7 +20,8 @@ public class UsuarioDAO {
             throw new EmailJaCadastradoException(usuario.getEmail());
         }
 
-        String sql = "INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)";
+        String tipo = usuario.getTipo() != null ? usuario.getTipo() : "comum";
+        String sql = "INSERT INTO usuarios (nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?)";
         String hash = BCrypt.hashpw(senhaPlana, BCrypt.gensalt());
 
         try (Connection conexao = ConexaoBD.conectar();
@@ -27,6 +30,7 @@ public class UsuarioDAO {
             stmt.setString(1, usuario.getNome());
             stmt.setString(2, usuario.getEmail());
             stmt.setString(3, hash);
+            stmt.setString(4, tipo);
 
             stmt.executeUpdate();
         }
@@ -57,14 +61,68 @@ public class UsuarioDAO {
                 String hashSalvo = rs.getString("senha_hash");
 
                 if (BCrypt.checkpw(senhaDigitada, hashSalvo)) {
-                    Usuario usuario = new Usuario();
-                    usuario.setId(rs.getInt("id"));
-                    usuario.setNome(rs.getString("nome"));
-                    usuario.setEmail(rs.getString("email"));
-                    return usuario;
+                    return mapearUsuario(rs);
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * Confere se a senha informada bate com a senha atual do usuário.
+     * Usado para reautenticação antes de ações sensíveis, como excluir a própria
+     * conta.
+     */
+    public boolean confirmarSenha(int usuarioId, String senhaDigitada) throws SQLException {
+        String sql = "SELECT senha_hash FROM usuarios WHERE id = ?";
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            stmt.setInt(1, usuarioId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                String hashSalvo = rs.getString("senha_hash");
+                return BCrypt.checkpw(senhaDigitada, hashSalvo);
+            }
+        }
+        return false;
+    }
+
+    public void excluir(int usuarioId) throws SQLException {
+        String sql = "DELETE FROM usuarios WHERE id = ?";
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            stmt.setInt(1, usuarioId);
+            stmt.executeUpdate();
+        }
+    }
+
+    public List<Usuario> listarTodos() throws SQLException {
+        String sql = "SELECT * FROM usuarios ORDER BY nome";
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try (Connection conexao = ConexaoBD.conectar();
+                PreparedStatement stmt = conexao.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                usuarios.add(mapearUsuario(rs));
+            }
+        }
+
+        return usuarios;
+    }
+
+    private Usuario mapearUsuario(ResultSet rs) throws SQLException {
+        Usuario usuario = new Usuario();
+        usuario.setId(rs.getInt("id"));
+        usuario.setNome(rs.getString("nome"));
+        usuario.setEmail(rs.getString("email"));
+        usuario.setTipo(rs.getString("tipo"));
+        return usuario;
     }
 }

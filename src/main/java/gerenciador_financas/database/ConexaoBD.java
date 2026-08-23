@@ -9,7 +9,7 @@ import java.util.Properties;
 
 public class ConexaoBD {
 
-    private static Properties carregarConfig() throws IOException {
+    public static Properties carregarConfig() throws IOException {
         Properties props = new Properties();
         try (FileInputStream input = new FileInputStream("config.properties")) {
             props.load(input);

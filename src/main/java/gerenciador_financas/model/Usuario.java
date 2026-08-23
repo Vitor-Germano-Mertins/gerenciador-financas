@@ -5,15 +5,17 @@ public class Usuario {
     private String nome;
     private String email;
     private String senhaHash;
+    private String tipo;
 
     public Usuario() {
     }
 
-    public Usuario(int id, String nome, String email, String senhaHash) {
+    public Usuario(int id, String nome, String email, String senhaHash, String tipo) {
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.senhaHash = senhaHash;
+        this.tipo = tipo;
     }
 
     public int getId() {
@@ -46,5 +48,17 @@ public class Usuario {
 
     public void setSenhaHash(String senhaHash) {
         this.senhaHash = senhaHash;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public boolean isAdmin() {
+        return "admin".equals(tipo);
     }
 }

@@ -8,19 +8,20 @@ public class Transacao {
     private int usuarioId;
     private String descricao;
     private BigDecimal valor;
-    private String tipo; // "receita" ou "despesa"
-    private String categoria;
+    private String tipo;
+    private int categoriaId;
     private LocalDate dataTransacao;
 
     public Transacao() {
     }
 
-    public Transacao(int usuarioId, String descricao, BigDecimal valor, String tipo, String categoria, LocalDate dataTransacao) {
+    public Transacao(int usuarioId, String descricao, BigDecimal valor, String tipo, int categoriaId,
+            LocalDate dataTransacao) {
         this.usuarioId = usuarioId;
         this.descricao = descricao;
         this.valor = valor;
         this.tipo = tipo;
-        this.categoria = categoria;
+        this.categoriaId = categoriaId;
         this.dataTransacao = dataTransacao;
     }
 
@@ -64,12 +65,12 @@ public class Transacao {
         this.tipo = tipo;
     }
 
-    public String getCategoria() {
-        return categoria;
+    public int getCategoriaId() {
+        return categoriaId;
     }
 
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
+    public void setCategoriaId(int categoriaId) {
+        this.categoriaId = categoriaId;
     }
 
     public LocalDate getDataTransacao() {
